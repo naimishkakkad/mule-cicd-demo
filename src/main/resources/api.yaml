@@ -1,0 +1,4 @@
+http:
+  port: "8082"
+api:
+  autodiscoveryid: "1111"
