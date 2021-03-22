@@ -6,6 +6,7 @@
 	<groupId>com.mycompany</groupId>
 	<artifactId>mule-cicd-demo</artifactId>
     <version>1.0.1</version>
+    <packaging>mule-application</packaging>
 
 	<name>mule-cicd-demo</name>
 
