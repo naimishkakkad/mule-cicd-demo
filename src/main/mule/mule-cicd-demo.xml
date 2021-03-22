@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="474718da-78ae-4979-a9b9-b87e1dd344bd" >
+		<http:listener-connection host="0.0.0.0" port="${http.port}" />
+	</http:listener-config>
+	<api-gateway:autodiscovery apiId="${api.autodiscoveryid}" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="cfe7e95a-5499-4f01-ac81-1ea5c530b82f" flowRef="mule-cicd-demoFlow" />
+	<configuration-properties doc:name="Configuration properties" doc:id="e1f0997f-ec2f-4307-9cab-0219173a958f" file="api.yaml" />
+	<flow name="mule-cicd-demoFlow" doc:id="22b84f5d-a8c3-4299-b80f-7e1831775118" >
+		<http:listener doc:name="Listener" doc:id="3787463a-721f-4d69-b454-05d594c35e6c" config-ref="HTTP_Listener_config" path="/cicd"/>
+		<ee:transform doc:name="Transform Message" doc:id="f431a54d-22c7-4c22-8f55-c84c286e3d7c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	message : "Demo CI-CD Application" 
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
