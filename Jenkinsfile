@@ -19,7 +19,7 @@ pipeline {
 			environment {
 			        NEXUS_VERSION = "nexus3"
 					NEXUS_PROTOCOL = "http"
-					NEXUS_URL = "localhost:8091"
+					NEXUS_URL = "localhost:9091"
 					NEXUS_REPOSITORY = "mule-cicd-jenkins"
 					NEXUS_CREDENTIAL_ID = "nexus-user-credentials"
 			}
@@ -64,10 +64,11 @@ pipeline {
 	}
 	post {  
          success {  
-             mail bcc: '', body: "<b>Build Success</b><br>Project: ${env.JOB_NAME} <br>Build Number: ${env.BUILD_NUMBER} <br> URL: ${env.BUILD_URL}", cc: '', charset: 'UTF-8', from: '', mimeType: 'text/html', replyTo: '', subject: "Build Success: Project name -> ${env.JOB_NAME}", to: "akshay_gupta15@yahoo.com";
+             mail bcc: '', body: "<b>Build Success</b><br>Project: ${env.JOB_NAME} <br>Build Number: ${env.BUILD_NUMBER} <br> URL: ${env.BUILD_URL}", cc: '', charset: 'UTF-8', from: '', mimeType: 'text/html', replyTo: '', subject: "Build Success: Project name -> ${env.JOB_NAME}", to: "naimish.mulesoft.architect@gmail.com";
          }  
          failure {  
-             mail bcc: '', body: "<b>Build Failure</b><br>Project: ${env.JOB_NAME} <br>Build Number: ${env.BUILD_NUMBER} <br> URL: ${env.BUILD_URL}", cc: '', charset: 'UTF-8', from: '', mimeType: 'text/html', replyTo: '', subject: "Build Failure: Project name -> ${env.JOB_NAME}", to: "akshay_gupta15@yahoo.com";  
+             mail bcc: '', body: "<b>Build Failure</b><br>Project: ${env.JOB_NAME} <br>Build Number: ${env.BUILD_NUMBER} <br> URL: ${env.BUILD_URL}", cc: '', charset: 'UTF-8', from: '', mimeType: 'text/html', replyTo: '', subject: "Build Failure: Project name -> ${env.JOB_NAME}", to: "naimish.mulesoft.architect@gmail.com";  
          }  
      }  
 }
+
