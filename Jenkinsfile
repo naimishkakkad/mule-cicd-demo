@@ -19,7 +19,7 @@ pipeline {
 			environment {
 			        NEXUS_VERSION = "nexus3"
 					NEXUS_PROTOCOL = "http"
-					NEXUS_URL = "localhost:9091"
+					NEXUS_URL = "localhost:9081"
 					NEXUS_REPOSITORY = "mule-cicd-jenkins"
 					NEXUS_CREDENTIAL_ID = "nexus-user-credentials"
 			}
