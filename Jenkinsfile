@@ -35,7 +35,7 @@ pipeline {
                             groupId: pom.groupId,
 			    version: "${BUILD_NUMBER}",
                             repository: NEXUS_REPOSITORY,
-                            credentialsId: NEXUS_CREDENTIALS,
+                            credentialsId: "NEXUS_CREDENTIALS",
                             artifacts: [
                                 // Artifact generated such as .jar, .ear and .war files.
                                 [artifactId: pom.artifactId,
