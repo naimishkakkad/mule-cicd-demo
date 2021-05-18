@@ -16,13 +16,7 @@ pipeline {
             }
         }
         stage('Publish to Nexus Repository') {
-			environment {
-			        NEXUS_VERSION = "nexus3"
-					NEXUS_PROTOCOL = "http"
-					NEXUS_URL = "localhost:9081"
-					NEXUS_REPOSITORY = "mule-cicd-jenkins"
-					NEXUS_CREDENTIAL_ID = "nexus-user-credentials"
-			}
+			
             steps {
                 script {
                     pom = readMavenPom file: "pom.xml";
@@ -41,7 +35,7 @@ pipeline {
                             groupId: pom.groupId,
 			    version: "${BUILD_NUMBER}",
                             repository: NEXUS_REPOSITORY,
-                            credentialsId: NEXUS_CREDENTIAL_ID,
+                            credentialsId: NEXUS_CREDENTIALS,
                             artifacts: [
                                 // Artifact generated such as .jar, .ear and .war files.
                                 [artifactId: pom.artifactId,
