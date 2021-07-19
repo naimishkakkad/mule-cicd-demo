@@ -56,13 +56,13 @@ pipeline {
             }
 		}	
 	}
-	post {  
-         success {  
-             mail bcc: '', body: "<b>Build Success</b><br>Project: ${env.JOB_NAME} <br>Build Number: ${env.BUILD_NUMBER} <br> URL: ${env.BUILD_URL}", cc: '', charset: 'UTF-8', from: '', mimeType: 'text/html', replyTo: '', subject: "Build Success: Project name -> ${env.JOB_NAME}", to: "naimish.mulesoft.architect@gmail.com";
-         }  
-         failure {  
-             mail bcc: '', body: "<b>Build Failure</b><br>Project: ${env.JOB_NAME} <br>Build Number: ${env.BUILD_NUMBER} <br> URL: ${env.BUILD_URL}", cc: '', charset: 'UTF-8', from: '', mimeType: 'text/html', replyTo: '', subject: "Build Failure: Project name -> ${env.JOB_NAME}", to: "naimish.mulesoft.architect@gmail.com";  
-         }  
-     }  
+	//post {  
+       //  success {  
+         //    mail bcc: '', body: "<b>Build Success</b><br>Project: ${env.JOB_NAME} <br>Build Number: ${env.BUILD_NUMBER} <br> URL: ${env.BUILD_URL}", cc: '', charset: 'UTF-8', from: '', mimeType: 'text/html', replyTo: '', subject: "Build Success: Project name -> ${env.JOB_NAME}", to: "naimish.mulesoft.architect@gmail.com";
+        // }  
+       //  failure {  
+       //      mail bcc: '', body: "<b>Build Failure</b><br>Project: ${env.JOB_NAME} <br>Build Number: ${env.BUILD_NUMBER} <br> URL: ${env.BUILD_URL}", cc: '', charset: 'UTF-8', from: '', mimeType: 'text/html', replyTo: '', subject: "Build Failure: Project name -> ${env.JOB_NAME}", to: "naimish.mulesoft.architect@gmail.com";  
+       //  }  
+    // }  
 }
 
