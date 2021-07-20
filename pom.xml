@@ -43,7 +43,11 @@
 					<workers>1</workers>
 					<workerType>MICRO</workerType>
 					<objectStoreV2>true</objectStoreV2>
-	
+					<properties>
+							<api.autodiscoveryid>cloudhub.api.id</api.autodiscoveryid>
+							<anypoint.platform.client_id>cloudhub.env.id</anypoint.platform.client_id>
+							<anypoint.platform.client_secret>cloudhub.env.secret</anypoint.platform.client_secret>
+					</properties>
 					</cloudHubDeployment>
 				</configuration>
 			</plugin>
