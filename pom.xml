@@ -31,17 +31,19 @@
 				<version>${mule.maven.plugin.version}</version>
 				<extensions>true</extensions>
 				<configuration>
-					<cloudHubDeployment>
-						<uri>https://anypoint.mulesoft.com</uri>
-						<muleVersion>4.3.0</muleVersion>
-						<username>naimishkakkad7</username>
-						<password>Naimishkakkad7</password>
-						<applicationName>mule-cicd-naimish-demo</applicationName>
-						<environment>Sandbox</environment>
-						<workerType>MICRO</workerType>
-						<region>us-east-2</region>
-						<workers>1</workers>
-						<objectStoreV2>true</objectStoreV2>
+				<cloudHubDeployment>
+					<uri>https://anypoint.mulesoft.com</uri>;
+					<muleVersion>4.3.0</muleVersion>
+					<connectedAppClientId>29c8bd2f493e434f82d3dc5a5a6166de</connectedAppClientId>
+					<connectedAppClientSecret>b268b034B8E74E619Bc5c5507B834782</connectedAppClientSecret>
+					<connectedAppGrantType>client_credentials</connectedAppGrantType>
+					<applicationName>${cloudhub.application.name}</applicationName>
+					<environment>${environment}</environment>
+					<region>us-east-2</region>
+					<workers>1</workers>
+					<workerType>MICRO</workerType>
+					<objectStoreV2>true</objectStoreV2>
+	
 					</cloudHubDeployment>
 				</configuration>
 			</plugin>
