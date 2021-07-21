@@ -1,0 +1,85 @@
+
+
+pipeline {
+    agent any
+    tools {
+        maven "maven"
+    }
+    options {
+        skipDefaultCheckout(true)
+    }
+    stages {
+
+        stage('Fetch Artifact') {
+            
+            steps {
+               cleanWs();
+               bat "mvn org.apache.maven.plugins:maven-dependency-plugin:3.1.1:copy -Dartifact=com.mycompany:${project_name}:${version}:jar -DoutputDirectory=${WORKSPACE}\\app -DoverWrite=true"
+               bat "mvn org.apache.maven.plugins:maven-dependency-plugin:3.1.1:copy -Dartifact=com.mycompany:${project_name}:${version}:properties -DoutputDirectory=${WORKSPACE}\\app -DoverWrite=true"
+			   bat "mvn org.apache.maven.plugins:maven-dependency-plugin:3.1.1:copy -Dartifact=com.mycompany:${project_name}:${version}:pom -DoutputDirectory=${WORKSPACE}\\app -DoverWrite=true"
+               script {
+					properties = new Properties()
+					try{
+							properties = new Properties()
+							File propertiesFile = new File(env['WORKSPACE']+"\\app\\${project_name}-${version}.properties")
+							properties.load(propertiesFile.newDataInputStream())
+					}catch(Exception e){
+						println e.getMessage()
+						throw new Exception("Error encountered while loading properties file.")
+					}
+				}	
+            }
+        }
+      stage ('Trigger API Configuration') {
+        steps{
+           script{
+               def api_configuration_result =  build job: 'CICD_API_Policy_Configuration_Discovery', parameters: [
+      string(name: 'project_name', value:"${project_name}"),
+      string(name:'version', value: "${version}"),
+      string(name:'api_id', value: "12345")]
+            def api_configuration_return_variables = api_configuration_result.getBuildVariables()
+            AUTODISCOVERY_ID = api_configuration_return_variables."API_ID"
+           }
+        }
+}
+        stage('Deploy') {
+		
+		 steps {
+		 
+		 
+	  script{
+					withCredentials([usernamePassword(
+							credentialsId: "DEV_ANYPOINT_CA_CREDS",
+								usernameVariable: 'ANYPOINT_CLIENT_ID',
+								passwordVariable: 'ANYPOINT_CLIENT_SECRET',
+					), usernamePassword(
+							credentialsId: "DEV_ENV_CLIENT_CREDS",
+								usernameVariable: 'ANYPOINT_ENV_ID',
+								passwordVariable: 'ANYPOINT_ENV_SECRET',
+					)]){
+					
+					bat "mvn mule:deploy -f ${WORKSPACE}\\app\\${project_name}-${version}.pom -Dmule.artifact=${WORKSPACE}\\app\\${project_name}-${version}.jar -Dcloudhub.application.name=mule-cicd-demo-app -Denvironment=Dev -Dcloudhub.api.id=${AUTODISCOVERY_ID} -Dcloudhub.env.id=${ANYPOINT_ENV_ID} -Dcloudhub.env.secret=${ANYPOINT_ENV_SECRET}"		
+	
+
+					}	
+                  	               
+                }	
+           
+
+
+
+
+		}
+		
+		
+        }  
+    }
+//post {  
+  //       success {  
+    //         mail bcc: '', body: "<b>Build Success</b><br>Project: ${env.JOB_NAME} <br>Build Number: ${env.BUILD_NUMBER} <br> URL: ${env.BUILD_URL}", cc: '', charset: 'UTF-8', from: '', mimeType: 'text/html', replyTo: '', subject: "Build Success: Project name -> ${env.JOB_NAME}", to: "youremail@gmail.com";
+      //   }  
+        // failure {  
+          //   mail bcc: '', body: "<b>Build Failure</b><br>Project: ${env.JOB_NAME} <br>Build Number: ${env.BUILD_NUMBER} <br> URL: ${env.BUILD_URL}", cc: '', charset: 'UTF-8', from: '', mimeType: 'text/html', replyTo: '', subject: "Build Failure: Project name -> ${env.JOB_NAME}", to: "youremail@gmail.com";  
+         //}  
+     //}  
+}

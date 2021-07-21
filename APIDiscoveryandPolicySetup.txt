@@ -1,0 +1,281 @@
+@Grapes(
+    @Grab(group='org.codehaus.groovy.modules.http-builder', module='http-builder', version='0.7.1')
+)
+
+import groovyx.net.http.HTTPBuilder
+import static groovyx.net.http.ContentType.*
+import static groovyx.net.http.Method.*
+import org.jenkinsci.plugins.cloudhubdeployer.common.*;
+import org.jenkinsci.plugins.cloudhubdeployer.data.*;
+
+pipeline {
+    agent any
+     tools {
+        maven "maven"
+    }
+    stages {
+        stage('Fetch API Configuration File') {
+            
+            steps {
+               cleanWs();
+               bat "mvn org.apache.maven.plugins:maven-dependency-plugin:3.1.1:copy -Dartifact=com.mycompany:${project_name}:${version}:properties -DoutputDirectory=${WORKSPACE}\\app -DoverWrite=true"
+               script {
+					properties = new Properties()
+					try{
+							properties = new Properties()
+							File propertiesFile = new File(env['WORKSPACE']+"\\app\\${project_name}-${version}.properties")
+							properties.load(propertiesFile.newDataInputStream())
+					}catch(Exception e){
+						println e.getMessage()
+						throw new Exception("Error encountered while loading properties file.")
+					}
+				}	
+            }
+        }
+       stage('API Discovery and Policy Setup') {
+			environment {
+			
+                
+                ORG_ID =  "${DEV_ANYPOINT_ORG_ID}"
+				ENV_ID = "${DEV_ANYPOINT_ENV_ID}"
+			}
+            steps {
+               script {
+					
+					withCredentials([usernamePassword(
+                            credentialsId: "DEV_ANYPOINT_CA_CREDS",
+                                usernameVariable: 'ANYPOINT_CA_ID',
+                                passwordVariable: 'ANYPOINT_CA_SECRET',)]){
+								
+					String tokenURL = "https://anypoint.mulesoft.com/accounts/api/v2/oauth2/token"
+					String APIURL = "https://anypoint.mulesoft.com/apimanager/api/v1/organizations/"+env['ORG_ID']+"/environments/"+env['ENV_ID']+"/apis"
+					def APIName = getEnvProperty("api.name")
+					def AutodiscoveryId
+					Set alreadyAppliedPolicies=[]
+					def requiredPolicies = (getEnvProperty("policies.list")).split(",")
+					def policyConfigurations =[
+						"json-threat-protection" : [
+							configurationData : [
+								maxContainerDepth : getEnvProperty("policies.jtp.maxContainerDepth"),
+								maxStringValueLength :  getEnvProperty("policies.jtp.maxStringValueLength"),
+								maxObjectEntryNameLength :  getEnvProperty("policies.jtp.maxObjectEntryNameLength"),
+								maxObjectEntryCount :  getEnvProperty("policies.jtp.maxObjectEntryCount"),
+								maxArrayElementCount :  getEnvProperty("policies.jtp.maxArrayElementCount")
+							],
+							pointcutData : null,
+							policyTemplateId: "json-threat-protection",
+							assetId:  "json-threat-protection",
+							assetVersion:  getEnvProperty("policies.jtp.version"),
+							groupId: "68ef9520-24e9-4cf2-b2f5-620025690913"
+						],
+						"client-id-enforcement" : [
+							configurationData : [
+								credentialsOriginHasHttpBasicAuthenticationHeader: "customExpression",
+								clientIdExpression: "#[attributes.headers['client_id']]",
+								clientSecretExpression: "#[attributes.headers['client_secret']]"
+							],
+							pointcutData : null,
+							policyTemplateId: "client-id-enforcement",
+							assetId:"client-id-enforcement",
+							assetVersion: "1.2.3",
+							groupId:"68ef9520-24e9-4cf2-b2f5-620025690913"
+						],
+						"jwt-validation" :[
+							configurationData : [
+								jwtOrigin: getEnvProperty("policies.jwt.jwtOrigin"),
+								jwtExpression: getEnvProperty("policies.jwt.jwtExpression"),
+								signingMethod: getEnvProperty("policies.jwt.signingMethod"),
+								signingKeyLength: getEnvProperty("policies.jwt.signingKeyLength"),
+								jwtKeyOrigin: getEnvProperty("policies.jwt.jwtKeyOrigin"),
+								jwksUrl: getEnvProperty("policies.jwt.jwturl"),
+								textKey: "1",
+								jwksServiceTimeToLive: getEnvProperty("policies.jwt.jwksServiceTimeToLive"),
+								skipClientIdValidation: Boolean.parseBoolean(getEnvProperty("policies.jwt.skipClientIdValidation")),
+								clientIdExpression: getEnvProperty("policies.jwt.clientIdExpression"),
+								validateAudClaim: Boolean.parseBoolean(getEnvProperty("policies.jwt.validateAudClaim")),
+								mandatoryAudClaim: Boolean.parseBoolean(getEnvProperty("policies.jwt.mandatoryAudClaim")),
+								supportedAudiences : "aud.example.com",
+								mandatoryExpClaim: Boolean.parseBoolean(getEnvProperty("policies.jwt.mandatoryExpClaim")),
+								mandatoryNbfClaim: Boolean.parseBoolean(getEnvProperty("policies.jwt.mandatoryNbfClaim")),
+								validateCustomClaim: Boolean.parseBoolean(getEnvProperty("policies.jwt.validateCustomClaim")),
+								mandatoryCustomClaims: [
+								    [
+								        "key": "aud",
+                                        "value":  getEnvProperty("policies.jwt.mandatoryClaims.aud")
+								    ]
+							    ],
+								supportedAudiences : "aud.example.com"
+							],
+							pointcutData : null,
+							policyTemplateId: "jwt-validation",
+							assetId:"jwt-validation",
+							assetVersion: getEnvProperty("policies.jwt.version"),
+							groupId:"68ef9520-24e9-4cf2-b2f5-620025690913"
+						]
+					]
+					  
+					println "----Fetching Access Token-----"
+
+					def access_token;
+					def tokenURLResult;
+					def tokenRequestBody = [client_id: env['ANYPOINT_CA_ID'],client_secret: env['ANYPOINT_CA_SECRET'],grant_type: 'client_credentials']
+					tokenURLResult = makeRestPostCall(tokenURL,null,tokenRequestBody,null);
+					access_token = tokenURLResult.'access_token'
+
+					println "----Fetched Access Token-----"
+
+					println "----Checking if API Already Exists-----"
+
+					def getAPIInstanceResponse;
+					def totalAPIs;
+					getAPIInstanceResponse = makeRestGetCall(APIURL, [assetId: APIName],access_token);
+					totalAPIs = getAPIInstanceResponse.total
+					if(totalAPIs>0)
+						{AutodiscoveryId = getAPIInstanceResponse.assets[0].apis[0].id}
+
+					//If the required API already exists in the platform
+
+					if(totalAPIs>0){
+
+						println "----API Already exists : "+APIName+" : "+AutodiscoveryId+"-----"
+						println "----Fetching the List of Applied policies-----"
+						def getAppliedPoliciesResponse;
+						def policyURL = APIURL + "/" + AutodiscoveryId + "/policies";
+						getAppliedPoliciesResponse = makeRestGetCall(policyURL,null,access_token)
+						for(policy in getAppliedPoliciesResponse.policies){
+							alreadyAppliedPolicies.add(policy.template.assetId)
+						}
+						println alreadyAppliedPolicies
+						println "----List of Applied policies fetched-----"
+						println "-----Applying Policies-----"
+						for(requiredPolicy in requiredPolicies){
+							if(alreadyAppliedPolicies.contains(requiredPolicy)){
+								println "-----Policy "+requiredPolicy+" already applied-----"
+							}else{
+								println "-----Applying "+requiredPolicy+" policy-----"
+								makeRestPostCallForPolicies(policyURL,null,policyConfigurations.get(requiredPolicy),access_token)
+							}
+						}
+						
+					println "-----Finished Applying Policies-----"
+
+					//If the required API does not exists in the platform
+
+					}else{
+					  
+						println "----API : "+APIName+" does not exists in the Platform-----"
+						println "----Creating new API : "+APIName+"-----"
+						APIRequestBody =[spec: 
+											[
+											  groupId: env['ORG_ID'],
+											  assetId: APIName,
+											  version:  getEnvProperty('api.version')
+											],
+										endpoint: [
+										  deploymentType : "CH",
+										  isCloudHub: true,
+										  muleVersion4OrAbove: true,
+										  proxyUri: null,
+										  referencesUserDomain: null,
+										  responseTimeout: null,
+										  type: null,
+										  uri: null
+										],
+										instanceLabel:  getEnvProperty("api.instanceLabel")
+									]
+
+						def APICallResponse = makeRestPostCall(APIURL,null,APIRequestBody,access_token)
+						AutodiscoveryId = APICallResponse.endpoint.'apiId'
+						def policyURL = APIURL + "/" + AutodiscoveryId + "/policies";
+						println "----Created new API : "+APIName+" : "+AutodiscoveryId+"-----"
+						println "-----Applying Policies-----"
+						for(requiredPolicy in requiredPolicies){
+							println "-----Applying "+requiredPolicy+" policy-----"
+							makeRestPostCallForPolicies(policyURL,null,policyConfigurations.get(requiredPolicy),access_token)
+						}
+						println "-----Finished Applying Policies-----"
+					}
+					
+					//API_ID = AutodiscoveryId
+					env.API_ID = AutodiscoveryId
+                 }
+				}
+            }
+        }
+    }
+//post {  
+  //       success {  
+    //         mail bcc: '', body: "<b>Build Success</b><br>Project: ${env.JOB_NAME} <br>Build Number: ${env.BUILD_NUMBER} <br> URL: ${env.BUILD_URL}", cc: '', charset: 'UTF-8', from: '', mimeType: 'text/html', replyTo: '', subject: "Build Success: Project name -> ${env.JOB_NAME}", to: "youremail@gmail.com";
+      //   }  
+        // failure {  
+          //   mail bcc: '', body: "<b>Build Failure</b><br>Project: ${env.JOB_NAME} <br>Build Number: ${env.BUILD_NUMBER} <br> URL: ${env.BUILD_URL}", cc: '', charset: 'UTF-8', from: '', mimeType: 'text/html', replyTo: '', subject: "Build Failure: Project name -> ${env.JOB_NAME}", to: "youremail@gmail.com";  
+         //}  
+     //}  
+}
+@NonCPS
+//Helper method to make http rest get calls
+def makeRestGetCall(String url,Object queryParam,String access_token){
+def result;
+def requestURL = new HTTPBuilder(url);
+requestURL.request(GET, JSON ) { req ->
+    if(access_token != null )
+  		{headers."Authorization" = "Bearer " + access_token}
+  	uri.query=queryParam
+    response.success = { resp, reader ->
+        println "$resp.statusLine"
+      	result = reader
+      }
+    response.failure = { resp, reader ->
+       throw new Exception(reader.toString())
+      }
+    }
+return result;
+}
+
+@NonCPS
+//Helper method to make http rest post calls
+def makeRestPostCall(String url,Object queryParam,Object requestBody,String access_token){
+def result;
+def requestURL = new HTTPBuilder(url);
+requestURL.request(POST, JSON ) { req ->
+    if(access_token != null )
+  		{headers."Authorization" = "Bearer " + access_token}
+  	uri.query=queryParam
+  	body = requestBody
+    response.success = { resp, reader ->
+        println "$resp.statusLine"
+      	result = reader
+      }
+     response.failure = { resp, reader ->
+       throw new Exception(reader.toString())
+      }
+    }
+return result;
+}
+@NonCPS
+//Helper method to make http rest post calls for applying policies
+def makeRestPostCallForPolicies(String url,Object queryParam,Object requestBody,String access_token){
+def result;
+def requestURL = new HTTPBuilder(url);
+requestURL.request(POST, JSON ) { req ->
+    if(access_token != null )
+  		{headers."Authorization" = "Bearer " + access_token}
+  	uri.query=queryParam
+  	body = requestBody
+    response.success = { resp, reader ->
+        println "$resp.statusLine"
+      	result = reader
+        println "-----Policy "+requestBody."assetId"+" Applied-----"
+      }
+ response.failure = { resp, reader ->
+        println "-----Error while applying Policy "+requestBody."assetId"+"-----"
+        println reader
+      }
+    }
+return result;
+}
+@NonCPS
+//Helper method fetch the properties from the property file
+def getEnvProperty(String propertyName){
+return properties.getProperty(propertyName)
+}
