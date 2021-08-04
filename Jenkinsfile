@@ -10,9 +10,8 @@ pipeline {
                 script {
 
 			def response = bat 'curl -H "Content-Type: application/json" -X POST https://anypoint.mulesoft.com/accounts/api/v2/oauth2/token -d "{\\"client_id\\":\\"29c8bd2f493e434f82d3dc5a5a6166de\\",\\"client_secret\\":\\"b268b034B8E74E619Bc5c5507B834782\\",\\"grant_type\\":\\"client_credentials\\"}"'
-			def token_json = readJSON text: ${response}
-			
-                        echo token_json
+			def token=response.'access_token''
+                        echo token
                 }
             }
         }
