@@ -4,6 +4,21 @@ pipeline {
         maven "maven"
     }
     stages {
+	    
+	    stage("Curl token") {
+            steps {
+                script {
+
+                    final String response = sh(script: "curl -L -X POST 'https://anypoint.mulesoft.com/accounts/api/v2/oauth2/token'; -H 'Content-Type: application/x-www-form-urlencoded' --data-urlencode 'client_id=29c8bd2f493e434f82d3dc5a5a6166de' --data-urlencode 'client_secret=b268b034B8E74E619Bc5c5507B834782' --data-urlencode 'grant_type=client_credentials' | jq -r '.access_token')", returnStdout: true).trim()
+
+                    echo response
+                }
+            }
+        }
+		
+		
+	    
+	    
          stage('Build') {
             steps {
                bat "mvn -B -U -e -V clean -DskipTests package"
@@ -15,6 +30,9 @@ pipeline {
                bat "mvn test -Dhttp.port=8093"
             }
         }
+	    
+	    
+	    
         stage('Publish to Nexus Repository') {
 			
             steps {
