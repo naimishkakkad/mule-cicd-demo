@@ -55,6 +55,12 @@
 	</build>
 
 	<dependencies>
+		<dependency>
+			<groupId>75d5a0a7-4539-4cb2-8e83-2a8615be476b</groupId>
+			<artifactId>customasset</artifactId>
+			<version>1.0.0</version>
+			<classifier>mule-plugin</classifier>
+		</dependency>
         <dependency>
             <groupId>org.mule.connectors</groupId>
             <artifactId>mule-http-connector</artifactId>
