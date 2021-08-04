@@ -11,7 +11,7 @@ pipeline {
 
 			def response = bat (script: 'curl -H "Content-Type: application/json" -X POST https://anypoint.mulesoft.com/accounts/api/v2/oauth2/token -d "{\\"client_id\\":\\"29c8bd2f493e434f82d3dc5a5a6166de\\",\\"client_secret\\":\\"b268b034B8E74E619Bc5c5507B834782\\",\\"grant_type\\":\\"client_credentials\\"}" | C:\\Users\\naimish_kakkad\\jq-win64.exe .\\"access_token\\"',returnStdout: true)
 			echo response
-			println(response.substring(response.indexOf("access_token")+1))
+			println(response.substring(response.indexOf("access_token")+14))
 		}
             }
         }
