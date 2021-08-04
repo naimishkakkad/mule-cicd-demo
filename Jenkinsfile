@@ -9,7 +9,7 @@ pipeline {
             steps {
                 script {
 
-                    final String response = bat(script: "curl -L -X POST 'https://anypoint.mulesoft.com/accounts/api/v2/oauth2/token'; -H 'Content-Type: application/x-www-form-urlencoded' --data-urlencode 'client_id=29c8bd2f493e434f82d3dc5a5a6166de' --data-urlencode 'client_secret=b268b034B8E74E619Bc5c5507B834782' --data-urlencode 'grant_type=client_credentials' | jq -r '.access_token')"", returnStdout: true).trim()
+                    final String response = bat(script: "curl -L -X POST 'https://anypoint.mulesoft.com/accounts/api/v2/oauth2/token'; -H 'Content-Type: application/x-www-form-urlencoded' --data-urlencode 'client_id=29c8bd2f493e434f82d3dc5a5a6166de' --data-urlencode 'client_secret=b268b034B8E74E619Bc5c5507B834782' --data-urlencode 'grant_type=client_credentials' | jq -r '.access_token')", returnStdout: true).trim()
 
                     echo response
                 }
