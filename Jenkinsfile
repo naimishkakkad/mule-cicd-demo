@@ -3,6 +3,8 @@ pipeline {
     tools {
         maven "maven"
     }
+	stages{
+		
   stage("Curl token") {
             steps {
                 script {
